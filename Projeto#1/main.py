@@ -12,11 +12,11 @@ import cv2
 
 #===============================================================================
 
-INPUT_IMAGE =  'arroz.bmp'
+INPUT_IMAGE =  'C:/Users/mfado/Documents/GitHub/CSV30/Projeto#1/arroz.bmp'
 
 # TODO: ajuste estes parâmetros!
 NEGATIVO = False
-THRESHOLD = 0.4
+THRESHOLD = 0.7
 ALTURA_MIN = 1
 LARGURA_MIN = 1
 N_PIXELS_MIN = 1
@@ -35,6 +35,8 @@ Valor de retorno: versão binarizada da img_in.'''
     # TODO: escreva o código desta função.
     # Dica/desafio: usando a função np.where, dá para fazer a binarização muito
     # rapidamente, e com apenas uma linha de código!
+    return np.uint8(np.where( img <= threshold, 1, 0))
+    
 
 #-------------------------------------------------------------------------------
 
@@ -83,15 +85,15 @@ def main ():
     cv2.imshow ('01 - binarizada', img)
     cv2.imwrite ('01 - binarizada.png', img*255)
 
-    start_time = timeit.default_timer ()
-    componentes = rotula (img, LARGURA_MIN, ALTURA_MIN, N_PIXELS_MIN)
-    n_componentes = len (componentes)
-    print ('Tempo: %f' % (timeit.default_timer () - start_time))
-    print ('%d componentes detectados.' % n_componentes)
+    # start_time = timeit.default_timer ()
+    # componentes = rotula (img, LARGURA_MIN, ALTURA_MIN, N_PIXELS_MIN)
+    # n_componentes = len (componentes)
+    # print ('Tempo: %f' % (timeit.default_timer () - start_time))
+    # print ('%d componentes detectados.' % n_componentes)
 
-    # Mostra os objetos encontrados.
-    for c in componentes:
-        cv2.rectangle (img_out, (c ['L'], c ['T']), (c ['R'], c ['B']), (0,0,1))
+    # # Mostra os objetos encontrados.
+    # for c in componentes:
+    #     cv2.rectangle (img_out, (c ['L'], c ['T']), (c ['R'], c ['B']), (0,0,1))
 
     cv2.imshow ('02 - out', img_out)
     cv2.imwrite ('02 - out.png', img_out*255)
