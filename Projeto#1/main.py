@@ -10,13 +10,15 @@ import timeit
 import numpy as np
 import cv2
 
+# TODO: Descomentar img.show() na entrega final. Posso testar pelo Windows depois
+
 #===============================================================================
 
-INPUT_IMAGE =  'C:/Users/mfado/Documents/GitHub/CSV30/Projeto#1/arroz.bmp'
+INPUT_IMAGE =  'arroz.bmp'
 
 # TODO: ajuste estes parâmetros!
 NEGATIVO = False
-THRESHOLD = 0.7
+THRESHOLD = 0.7 # Já ajustado.
 ALTURA_MIN = 1
 LARGURA_MIN = 1
 N_PIXELS_MIN = 1
@@ -35,7 +37,15 @@ Valor de retorno: versão binarizada da img_in.'''
     # TODO: escreva o código desta função.
     # Dica/desafio: usando a função np.where, dá para fazer a binarização muito
     # rapidamente, e com apenas uma linha de código!
-    return np.uint8(np.where( img <= threshold, 1, 0))
+
+    # np.where(condition, if Yes, if No)
+    # Nesse caso, se o valor do pixel menor que threshold, põe como 0; Se maior,
+    # põe -1 Esses valores são pra o algoritmo, e não faz muito sentido
+    # tentar printar a imagem assim.
+
+    # TODO: modificar para funcionar com mais de um canal. Acredito eu que seria
+    # algo como img[x] ? Mas não sei como testar.
+    return np.uint8(np.where( img <= threshold, 0, -1))
     
 
 #-------------------------------------------------------------------------------
@@ -82,7 +92,7 @@ def main ():
     if NEGATIVO:
         img = 1 - img
     img = binariza (img, THRESHOLD)
-    cv2.imshow ('01 - binarizada', img)
+    # cv2.imshow ('01 - binarizada', img)
     cv2.imwrite ('01 - binarizada.png', img*255)
 
     # start_time = timeit.default_timer ()
@@ -95,7 +105,7 @@ def main ():
     # for c in componentes:
     #     cv2.rectangle (img_out, (c ['L'], c ['T']), (c ['R'], c ['B']), (0,0,1))
 
-    cv2.imshow ('02 - out', img_out)
+    # cv2.imshow ('02 - out', img_out)
     cv2.imwrite ('02 - out.png', img_out*255)
     cv2.waitKey ()
     cv2.destroyAllWindows ()
