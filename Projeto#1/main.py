@@ -16,7 +16,7 @@ INPUT_IMAGE = 'arroz.bmp'
 
 # TODO: ajuste estes parâmetros!
 NEGATIVO = False
-THRESHOLD = 0.7
+THRESHOLD = 0.8
 ALTURA_MIN = 18
 LARGURA_MIN = 18
 N_PIXELS_MIN = 413
@@ -42,16 +42,16 @@ Valor de retorno: versão binarizada da img_in.'''
 
 def inunda (label, img, row, col):
     rows, cols, channels = img.shape
-    if(img[row,col] == -1):
-        img[row,col] = label
-        if(row+1 <= rows):
-            inunda (label, img, row+1, col)
-        if(row-1 >= 0):
-            inunda (label, img, row-1, col)
-        if(col+1 <= cols):
-            inunda (label, img, row, col+1)
-        if(col-1 >= 0):
-            inunda (label, img, row, col-1)
+    if(img[row,col] == -1): #verifica se o pixel atual faz parte do blob
+        img[row,col] = label #coloca um novo label para esse pixel
+        if(row+1 <= rows): #verifica se o pixel a direta do atual faz parte da imagem
+            inunda (label, img, row+1, col) #chama inunda para esse pixel
+        if(row-1 >= 0): #verifica se o pixel a esquerda do atual faz parte da imagem
+            inunda (label, img, row-1, col) #chama inunda para esse pixel
+        if(col+1 <= cols): #verifica se o pixel acima do atual faz parte da imagem
+            inunda (label, img, row, col+1) #chama inunda para esse pixel
+        if(col-1 >= 0): #verifica se o pixel abaixo do atual faz parte da imagem
+            inunda (label, img, row, col-1) #chama inunda para esse pixel
 
 def rotula (img, largura_min, altura_min, n_pixels_min):
     '''Rotulagem usando flood fill. Marca os objetos da imagem com os valores
@@ -74,27 +74,27 @@ respectivamente: topo, esquerda, baixo e direita.'''
     # Use a abordagem com flood fill recursivo.
     rows, cols, channels = img.shape
     img_gs = img
-    img_gs = np.where(img == 1, -1, 1)
+    img_gs = np.where(img == 1, -1, 1) #coloca label -1 em todos os pixels brancos
 
-    label = -2
-    for row in range (rows):
-        for col in range (cols):
-            if(img_gs[row,col] == -1):
-                inunda(label, img_gs, row, col)
-                label -= 1
+    label = -2 #inicia o contador de labels em -2
+    for row in range (rows): #para cada linha da imagem
+        for col in range (cols): #para cada coluna da imagem
+            if(img_gs[row,col] == -1): #se o pixel selecionado tem o label -1
+                inunda(label, img_gs, row, col) #chamamos inunda para esse blob
+                label -= 1 #inunda so retorna quando o blob for completamente percorrido, desta forma podemos incrementar o label
 
-    dictBlobs = []
-    for labels in range (label, -1):
-        if (np.count_nonzero(img_gs == labels) >= N_PIXELS_MIN):
-            pixels = np.count_nonzero(img_gs == labels)
-            print("Label: " + str(labels) + " - " + str(pixels) + " pixels")
-            coord = np.argwhere(cv2.inRange(img_gs, labels, labels))
-            max = np.amax(coord, axis=0)
-            min = np.amin(coord, axis=0)
-            alt = max[1] - min[1]
-            lar = max[0] - min[0]
-            if (alt >= altura_min and lar >= largura_min):
-                blob = {
+    dictBlobs = [] #lista de dicionarios para cada um dos blobs
+    for labels in range (label, -1): #percorre todos os valores de labels encontrados iniciando em -2
+        pixels = np.count_nonzero(img_gs == labels) #conta o numero de pixels que estao classificado com label atual
+        if (pixels >= N_PIXELS_MIN): #verifica se a quantidade de pixels e valida para um blob
+            coord = np.argwhere(cv2.inRange(img_gs, labels, labels)) #retorna uma lista de tuplas com as coordenadas de todos os pixels classificados com label atual
+            max = np.amax(coord, axis=0) #pega a tupla de maior valor levando em considereção suas duas componentes
+            min = np.amin(coord, axis=0) #pega a tupla de menor valor levando em considereção suas duas componentes
+            alt = max[1] - min[1] #calcaula a altora do blob em pixels
+            lar = max[0] - min[0] #calcaula a lergura do blob em pixels
+            print("Label: " + str(labels) + " | n_pixels: " + str(pixels) + " pixels | altura: " + str(alt) + " pixels | largura: " + str(lar) + " pixels")
+            if (alt >= altura_min and lar >= largura_min): #verifica se a altura e a largura sao validas para um blob
+                blob = { #cria um dicionario com as informacoes do blob
                     'label' : labels,
                     'n_pixels' : pixels,
                     'L' : min[1],
@@ -104,7 +104,6 @@ respectivamente: topo, esquerda, baixo e direita.'''
                 }
                 dictBlobs.append(blob)
 
-    print(len(dictBlobs))
     return(dictBlobs)
 #===============================================================================
 
