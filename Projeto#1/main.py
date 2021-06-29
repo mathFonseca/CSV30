@@ -77,19 +77,19 @@ respectivamente: topo, esquerda, baixo e direita.'''
     img_gs = np.where(img == 1, -1, 1) #coloca label -1 em todos os pixels brancos
 
     label = -2 #inicia o contador de labels em -2
-    for row in range (rows): #para cada linha da imagem
-        for col in range (cols): #para cada coluna da imagem
-            if(img_gs[row,col] == -1): #se o pixel selecionado tem o label -1
-                inunda(label, img_gs, row, col) #chamamos inunda para esse blob
-                label -= 1 #inunda so retorna quando o blob for completamente percorrido, desta forma podemos incrementar o label
+    coords = np.argwhere(cv2.inRange(img_gs, -1, -1)) #retorna uma lista de tuplas com as coordenadas de todos os pixels classificados com label atual
+    for coord in coords: #para cada coordenada da lista
+        if(img_gs[coord[0],coord[1]] == -1): #se o pixel selecionado tem o label -1
+            inunda(label, img_gs, coord[0], coord[1]) #chamamos inunda para esse blob
+            label -= 1 #inunda so retorna quando o blob for completamente percorrido, desta forma podemos incrementar o label
 
     dictBlobs = [] #lista de dicionarios para cada um dos blobs
     for labels in range (label, -1): #percorre todos os valores de labels encontrados iniciando em -2
         pixels = np.count_nonzero(img_gs == labels) #conta o numero de pixels que estao classificado com label atual
         if (pixels >= N_PIXELS_MIN): #verifica se a quantidade de pixels e valida para um blob
-            coord = np.argwhere(cv2.inRange(img_gs, labels, labels)) #retorna uma lista de tuplas com as coordenadas de todos os pixels classificados com label atual
-            max = np.amax(coord, axis=0) #pega a tupla de maior valor levando em considereção suas duas componentes
-            min = np.amin(coord, axis=0) #pega a tupla de menor valor levando em considereção suas duas componentes
+            coords = np.argwhere(cv2.inRange(img_gs, labels, labels)) #retorna uma lista de tuplas com as coordenadas de todos os pixels classificados com label atual
+            max = np.amax(coords, axis=0) #pega a tupla de maior valor levando em considereção suas duas componentes
+            min = np.amin(coords, axis=0) #pega a tupla de menor valor levando em considereção suas duas componentes
             alt = max[1] - min[1] #calcaula a altora do blob em pixels
             lar = max[0] - min[0] #calcaula a lergura do blob em pixels
             print("Label: " + str(labels) + " | n_pixels: " + str(pixels) + " pixels | altura: " + str(alt) + " pixels | largura: " + str(lar) + " pixels")
