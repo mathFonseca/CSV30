@@ -13,6 +13,11 @@ import cv2
 # TODO: Descomentar img.show() na entrega final. Posso testar pelo Windows depois
 
 #===============================================================================
+# Trabalho 01 - Processamento Digital de Imagens
+# Professor: Bogdan Nassu
+# Autores: Alexandre Herrero Matias
+#        : Matheus Fonseca Alexandre
+#===============================================================================
 
 INPUT_IMAGE = 'arroz.bmp'
 
