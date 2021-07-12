@@ -33,15 +33,12 @@ def filtroMediaIngenuo(img, HEIGHT_WINDOW, WIDTH_WINDOW):
             sum = np.zeros(3)
             for y_janela in range(y-(int(HEIGHT_WINDOW/2)),y+(int(HEIGHT_WINDOW/2))+1):
                 for x_janela in range(x-int((WIDTH_WINDOW/2)),x+int((WIDTH_WINDOW/2))+1):
-                    # TODO: Tratar casos que a janela cai pra fora da imagem.
-                    # De acordo com PDF Trabalho 02 -  ignorar posições cujas janelas ficariam fora da imagem.
                     if(x_janela < WIDTH_IMAGE and y_janela < HEIGHT_IMAGE):
                         sum += img[y_janela][x_janela]
-                        print(sum)
+                        # print(sum)
             imgMediaIngenuo[y][x] = sum/WINDOW_SIZE
     
     return imgMediaIngenuo
-
 
 def filtroSeparavel(img, HEIGHT_WINDOW, WIDTH_WINDOW):
 
@@ -57,8 +54,6 @@ def filtroSeparavel(img, HEIGHT_WINDOW, WIDTH_WINDOW):
         for x in range(WIDTH_IMAGE):
             sum = np.zeros(3)
             for x_janela in range(x-(int(WIDTH_WINDOW/2)),x+(int(WIDTH_WINDOW/2)+1)):
-                # TODO: Tratar casos que a janela cai pra fora da imagem.
-                # De acordo com PDF Trabalho 02 -  ignorar posições cujas janelas ficariam fora da imagem.
                 if(x_janela < WIDTH_IMAGE):
                     sum += img[y][x_janela]
             imgHorizontal[y][x] = sum/WIDTH_WINDOW
@@ -68,8 +63,6 @@ def filtroSeparavel(img, HEIGHT_WINDOW, WIDTH_WINDOW):
         for x in range(WIDTH_IMAGE):
             sum = np.zeros(3)
             for y_janela in range(y-(int(HEIGHT_WINDOW/2)),y+(int(HEIGHT_WINDOW/2)+1)):
-                # TODO: Tratar casos que a janela cai pra fora da imagem.
-                # De acordo com PDF Trabalho 02 -  ignorar posições cujas janelas ficariam fora da imagem.
                 if(y_janela < HEIGHT_IMAGE):
                     sum += imgHorizontal[y_janela][x]
             imgSeparavel[y][x] = sum/HEIGHT_WINDOW
@@ -80,9 +73,6 @@ def filtroIntegral(img, HEIGHT_WINDOW, WIDTH_WINDOW):
     HEIGHT_IMAGE = img.shape[0]
     WIDTH_IMAGE = img.shape[1]
 
-    print(HEIGHT_IMAGE)
-    print(WIDTH_IMAGE)
-
     TOTAL = HEIGHT_WINDOW * WIDTH_WINDOW
     # Ajusta largura pro ímpar mais próximo (Sempre maior pra não gerar larguras menores
     # que a janela requisita pelo usuário).
@@ -92,56 +82,53 @@ def filtroIntegral(img, HEIGHT_WINDOW, WIDTH_WINDOW):
         HEIGHT_WINDOW += 1
 
     # Cria a imagem integral
-    img_integral = img
+    img_somada = img.copy()
+
     for y in range(0,HEIGHT_IMAGE):
-        img_integral[y][0] = img[y][0]
+        img_somada[y][0] = img[y][0]
         for x in range(1,WIDTH_IMAGE):
-            img_integral[y][x] = img[y][x] + img_integral[y][x-1]
+            img_somada[y][x] = img[y][x] + img_somada[y][x-1]
             
     for y in range(1,HEIGHT_IMAGE):
         for x in range(WIDTH_IMAGE):
-            img_integral[y][x] = img_integral[y][x] + img_integral[y-1][x]
+            img_somada[y][x] = img_somada[y][x] + img_somada[y-1][x]
 
+    print(img_somada[y][x])
     # Salva uma cópia
-    print(img_integral)
-    img_filtrada = img_integral
+    img_integral = img_somada.copy()
 
     for pixel_y in range(0,HEIGHT_IMAGE):
         for pixel_x in range(0,WIDTH_IMAGE):
         # Identify 4 edges of rectangle
             # Checa se o retangulo da janela não ultrapassa a imagem
 
-            maximum_x_value = (pixel_x + (WIDTH_WINDOW-1)/2)
-            minimum_x_value = (pixel_x - (WIDTH_WINDOW-1)/2)
+            # Valor máximo: menor possível desde que seja abaixo dos limites da imagem
+            maximum_x_value = int(min(WIDTH_IMAGE -1, pixel_x + (WIDTH_WINDOW-1)/2))
+            maximum_y_value = int(min(HEIGHT_IMAGE -1,pixel_y + (HEIGHT_WINDOW-1)/2))
 
-            minimum_y_value = (pixel_y - (HEIGHT_WINDOW-1)/2)
-            maximum_y_value = (pixel_y + (HEIGHT_WINDOW-1)/2)
+            # Valor minimo: mais alto possivel desde que seja acima de zero.
+            minimum_x_value = int(max(0, pixel_x - (WIDTH_WINDOW-1)/2))
+            minimum_y_value = int(max(0,pixel_y - (HEIGHT_WINDOW-1)/2))
+            
+            img_integral[pixel_y][pixel_x] = img_somada[maximum_y_value][maximum_x_value]
 
-            if( minimum_y_value < 0 or maximum_y_value >= (HEIGHT_IMAGE)):
-                # Ultrapasou as bordas.
-                img_filtrada[pixel_y][pixel_x] = img_integral[pixel_y][pixel_x]  
-            elif( minimum_x_value < 0 or maximum_x_value >= (WIDTH_IMAGE)):
-                # Ultrapasou as bordas.
-                img_filtrada[pixel_y][pixel_x] = img_integral[pixel_y][pixel_x] 
-            elif( (minimum_y_value -1) < 0 or (minimum_x_value -1) < 0): 
-                # # Janela cabe perfeitamente mas não dá para fazer o cálculo corretamente
-                # print("Janela cabe mas não dá pra extender." + "(" + str(pixel_y) + "," + str(pixel_x) + ")")
-                img_filtrada[pixel_y][pixel_x] = np.floor(img_integral[int(pixel_y + (HEIGHT_WINDOW-1)/2)][int(pixel_x + (WIDTH_WINDOW-1)/2)] /TOTAL)
-            else:
-                # print("# Está dentro as bordas." + "(" + str(pixel_y) + "," + str(pixel_x) + ")")
+            # Case 1 - Janela ultrapassou 
+            if(minimum_y_value > 0):
+                img_integral[pixel_y][pixel_x] -= img_somada[minimum_y_value - 1][maximum_x_value]
+            
+            if(minimum_x_value > 0):
+                img_integral[pixel_y][pixel_x] -= img_somada[maximum_y_value][minimum_x_value -1]
 
-                bottomLeft = img_integral[int(maximum_y_value)][int(minimum_x_value -1)]
-                bottomRight = img_integral[int(maximum_y_value)][int(maximum_x_value)]
-                topLeft = img_integral[int(minimum_y_value)][int(minimum_x_value)]
-                topRight = img_integral[int(minimum_y_value -1)][int(maximum_x_value)]
-                img_filtrada[pixel_y][pixel_x] = np.floor((bottomRight - bottomLeft - topRight + topLeft)/TOTAL)
-    # TODO: Recortar linhas e colunas cuja janela ficou pra fora.       
+            if(minimum_x_value > 0 and minimum_y_value > 0):
+                img_integral[pixel_y][pixel_x] += img_somada[minimum_y_value-1][minimum_x_value-1]
+
+            # TODO: Ajustar divisão pro número correto
+            img_integral[pixel_y][pixel_x] = img_integral[pixel_y][pixel_x]/TOTAL  
                     
-    return img_filtrada
-
+    return img_integral
 
 def main():
-    # Abre a imagem em escala de cinza.
+    # Abre a imagem.
     img = cv2.imread (INPUT_IMAGE)
     if img is None:
         print ('Erro abrindo a imagem.\n')
@@ -152,13 +139,15 @@ def main():
     #img = img.reshape ((img.shape [0], img.shape [1], 1))
     img = img.astype (np.float32) / 255
 
-    # Filtra a imagem.
-    # TODO: Preencher lista de filtragens da imagem
 
-    img_out_integral = filtroMediaIngenuo(img, HEIGHT_WINDOW, WIDTH_WINDOW)
+    # img_out_ingenuo = filtroMediaIngenuo(img, HEIGHT_WINDOW, WIDTH_WINDOW)
+    # cv2.imwrite ('01 - ingenuo.png', img_out_ingenuo*255)
 
-    # Salva imagens filtradas
-    cv2.imwrite ('02 - integral.png', img_out_integral*255)
+    # img_out_separavel = filtroSeparavel(img, HEIGHT_WINDOW, WIDTH_WINDOW)
+    # cv2.imwrite ('02 - separavel.png', img_out_separavel*255)
+
+    img_out_integral = filtroIntegral(img, HEIGHT_WINDOW, WIDTH_WINDOW)
+    cv2.imwrite ('03 - integral.png', img_out_integral*255)
 
     cv2.waitKey ()
     cv2.destroyAllWindows ()
