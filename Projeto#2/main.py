@@ -15,7 +15,7 @@ import cv2
 
 # Variaveis globais. 
 
-INPUT_IMAGE = 'Exemplos/a01 - Original.bmp'
+INPUT_IMAGE = 'Exemplos/b01 - Original.bmp'
 HEIGHT_WINDOW = 7   # Altura
 WIDTH_WINDOW = 7     # Largura
 
@@ -30,13 +30,14 @@ def filtroMediaIngenuo(img, HEIGHT_WINDOW, WIDTH_WINDOW):
 
     for y in range(HEIGHT_IMAGE):
         for x in range(WIDTH_IMAGE):
-            sum = 0
-            for y_janela in range(y-(HEIGHT_WINDOW/2),y+(HEIGHT_WINDOW/2)+1):
-                for x_janela in range(x-(WIDTH_WINDOW/2),x+(WIDTH_WINDOW/2)+1):
-
+            sum = np.zeros(3)
+            for y_janela in range(y-(int(HEIGHT_WINDOW/2)),y+(int(HEIGHT_WINDOW/2))+1):
+                for x_janela in range(x-int((WIDTH_WINDOW/2)),x+int((WIDTH_WINDOW/2))+1):
                     # TODO: Tratar casos que a janela cai pra fora da imagem.
                     # De acordo com PDF Trabalho 02 -  ignorar posições cujas janelas ficariam fora da imagem.
-                    sum += img[y_janela][x_janela]
+                    if(x_janela < WIDTH_IMAGE and y_janela < HEIGHT_IMAGE):
+                        sum += img[y_janela][x_janela]
+                        print(sum)
             imgMediaIngenuo[y][x] = sum/WINDOW_SIZE
     
     return imgMediaIngenuo
@@ -54,23 +55,23 @@ def filtroSeparavel(img, HEIGHT_WINDOW, WIDTH_WINDOW):
     # Filtro Horizontal (1,WIDTH_WINDOW)
     for y in range(HEIGHT_IMAGE):
         for x in range(WIDTH_IMAGE):
-            sum = 0
-            for x_janela in range(x-(WIDTH_WINDOW/2),x+(WIDTH_WINDOW/2)+1):
-
+            sum = np.zeros(3)
+            for x_janela in range(x-(int(WIDTH_WINDOW/2)),x+(int(WIDTH_WINDOW/2)+1)):
                 # TODO: Tratar casos que a janela cai pra fora da imagem.
                 # De acordo com PDF Trabalho 02 -  ignorar posições cujas janelas ficariam fora da imagem.
-                sum += img[y][x_janela]
+                if(x_janela < WIDTH_IMAGE):
+                    sum += img[y][x_janela]
             imgHorizontal[y][x] = sum/WIDTH_WINDOW
     
     # Filtro Vertical (HEIGHT_WINDOW,1)
     for y in range(HEIGHT_IMAGE):
         for x in range(WIDTH_IMAGE):
-            sum = 0
-            for y_janela in range(y-(HEIGHT_WINDOW/2),y+(HEIGHT_WINDOW/2)+1):
-
+            sum = np.zeros(3)
+            for y_janela in range(y-(int(HEIGHT_WINDOW/2)),y+(int(HEIGHT_WINDOW/2)+1)):
                 # TODO: Tratar casos que a janela cai pra fora da imagem.
                 # De acordo com PDF Trabalho 02 -  ignorar posições cujas janelas ficariam fora da imagem.
-                sum += imgHorizontal[y_janela][x]
+                if(y_janela < HEIGHT_IMAGE):
+                    sum += imgHorizontal[y_janela][x]
             imgSeparavel[y][x] = sum/HEIGHT_WINDOW
         
     return imgSeparavel
@@ -154,7 +155,7 @@ def main():
     # Filtra a imagem.
     # TODO: Preencher lista de filtragens da imagem
 
-    img_out_integral = filtroIntegral(img, HEIGHT_WINDOW, WIDTH_WINDOW)
+    img_out_integral = filtroMediaIngenuo(img, HEIGHT_WINDOW, WIDTH_WINDOW)
 
     # Salva imagens filtradas
     cv2.imwrite ('02 - integral.png', img_out_integral*255)
