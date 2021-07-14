@@ -18,6 +18,7 @@ import cv2
 INPUT_IMAGE = 'Exemplos/b01 - Original.bmp'
 HEIGHT_WINDOW = 7   # Altura
 WIDTH_WINDOW = 7     # Largura
+MODE = 0 # 0 - Ingenuo; 1 - Separável; 2 - Integral
 
 def filtroMediaIngenuo(img, HEIGHT_WINDOW, WIDTH_WINDOW):
 
@@ -93,7 +94,6 @@ def filtroIntegral(img, HEIGHT_WINDOW, WIDTH_WINDOW):
         for x in range(WIDTH_IMAGE):
             img_somada[y][x] = img_somada[y][x] + img_somada[y-1][x]
 
-    print(img_somada[y][x])
     # Salva uma cópia
     img_integral = img_somada.copy()
 
@@ -136,18 +136,25 @@ def main():
 
     # É uma boa prática manter o shape com 3 valores, independente da imagem ser
     # colorida ou não. Também já convertemos para float32.
-    #img = img.reshape ((img.shape [0], img.shape [1], 1))
     img = img.astype (np.float32) / 255
 
-
-    # img_out_ingenuo = filtroMediaIngenuo(img, HEIGHT_WINDOW, WIDTH_WINDOW)
-    # cv2.imwrite ('01 - ingenuo.png', img_out_ingenuo*255)
-
-    # img_out_separavel = filtroSeparavel(img, HEIGHT_WINDOW, WIDTH_WINDOW)
-    # cv2.imwrite ('02 - separavel.png', img_out_separavel*255)
-
-    img_out_integral = filtroIntegral(img, HEIGHT_WINDOW, WIDTH_WINDOW)
-    cv2.imwrite ('03 - integral.png', img_out_integral*255)
+    if(MODE == 0):
+        start_time = timeit.default_timer ()
+        img_out_ingenuo = filtroMediaIngenuo(img, HEIGHT_WINDOW, WIDTH_WINDOW)
+        print ('Tempo: %f' % (timeit.default_timer () - start_time))
+        cv2.imwrite ('01 - ingenuo.png', img_out_ingenuo*255)
+    elif(MODE == 1):
+        start_time = timeit.default_timer ()
+        img_out_separavel = filtroSeparavel(img, HEIGHT_WINDOW, WIDTH_WINDOW)
+        print ('Tempo: %f' % (timeit.default_timer () - start_time))
+        cv2.imwrite ('02 - separavel.png', img_out_separavel*255)
+    elif(MODE == 2):
+        start_time = timeit.default_timer ()
+        img_out_integral = filtroIntegral(img, HEIGHT_WINDOW, WIDTH_WINDOW)
+        print ('Tempo: %f' % (timeit.default_timer () - start_time))
+        cv2.imwrite ('03 - integral.png', img_out_integral*255)
+    else:
+        sys.exit()
 
     cv2.waitKey ()
     cv2.destroyAllWindows ()
