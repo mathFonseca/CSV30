@@ -36,7 +36,6 @@ def filtroMediaIngenuo(img, HEIGHT_WINDOW, WIDTH_WINDOW):
                 for x_janela in range(x-int((WIDTH_WINDOW/2)),x+int((WIDTH_WINDOW/2))+1):
                     if(x_janela < WIDTH_IMAGE and y_janela < HEIGHT_IMAGE):
                         sum += img[y_janela][x_janela]
-                        # print(sum)
             imgMediaIngenuo[y][x] = sum/WINDOW_SIZE
     
     return imgMediaIngenuo
