@@ -10,10 +10,41 @@
 
 import sys
 import numpy as np
+import matplotlib.pyplot as plt
 import cv2
 
 # Variaveis globais. 
-INPUT_IMAGE = 'Images/150.bmp'
+INPUT_IMAGE = 'Images/114.bmp'
+
+def inunda (label, img, row, col):
+    rows, cols = img.shape
+    if(img[row,col] == -1): #verifica se o pixel atual faz parte do blob
+        img[row,col] = label #coloca um novo label para esse pixel
+        if(row+1 <= rows): #verifica se o pixel a direta do atual faz parte da imagem
+            inunda (label, img, row+1, col) #chama inunda para esse pixel
+        if(row-1 >= 0): #verifica se o pixel a esquerda do atual faz parte da imagem
+            inunda (label, img, row-1, col) #chama inunda para esse pixel
+        if(col+1 <= cols): #verifica se o pixel acima do atual faz parte da imagem
+            inunda (label, img, row, col+1) #chama inunda para esse pixel
+        if(col-1 >= 0): #verifica se o pixel abaixo do atual faz parte da imagem
+            inunda (label, img, row, col-1) #chama inunda para esse pixel
+
+def rotula (img):
+    rows, cols = img.shape
+    img_gs = img
+    img_gs = np.where(img == 1, -1, 1) #coloca label -1 em todos os pixels brancos
+
+    label = -2 #inicia o contador de labels em -2
+    coords = np.argwhere(cv2.inRange(img_gs, -1, -1)) #retorna uma lista de tuplas com as coordenadas de todos os pixels classificados com label atual
+    for coord in coords: #para cada coordenada da lista
+        if(img_gs[coord[0],coord[1]] == -1): #se o pixel selecionado tem o label -1
+            inunda(label, img_gs, coord[0], coord[1]) #chamamos inunda para esse blob
+            label -= 1 #inunda so retorna quando o blob for completamente percorrido, desta forma podemos incrementar o label
+    areas = []
+    for labels in range (label, -1): #percorre todos os valores de labels encontrados iniciando em -2
+        pixels = np.count_nonzero(img_gs == labels) #conta o numero de pixels que estao classificado com label atual
+        areas.append(pixels)
+    return(areas)
 
 def main():
     # Abre a imagem.
@@ -22,57 +53,53 @@ def main():
         print ('Erro abrindo a imagem.\n')
         sys.exit ()
 
-    # É uma boa prática manter o shape com 3 valores, independente da imagem ser
-    # colorida ou não. Também já convertemos para float32.
-    # img = img.astype (np.float32) / 255
-
     # Step 1 - Escala de Cinza
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    # Step 2 - Normalização (Necessário?)
-    normalized = np.zeros((800,800))
-    normalized = cv2.normalize(gray,normalized,0,255,cv2.NORM_MINMAX)
+    # Step 2 - Limiarização adaptativa.
+    # TODO Encontrar um valor bom de C que em conjunto com sigma estime bem a quanatidade de arroz para todas as imagens
+    C = -50
+    adaptative = cv2.adaptiveThreshold(gray,255,cv2.ADAPTIVE_THRESH_MEAN_C,cv2.THRESH_BINARY,51,C)
+    kernel = np.ones((3,3),np.uint8)
+    fechamento = cv2.morphologyEx(adaptative,cv2.MORPH_OPEN,kernel)
+    
+    # É uma boa prática manter o shape com 3 valores, independente da imagem ser
+    # colorida ou não. Também já convertemos para float32.
+    fechamento = fechamento.astype(np.float32)/255
 
-    # Step 3 - Gaussian Blur com janela fixa 7x7.
-    gaussianBlur = cv2.GaussianBlur(normalized,(7,7),0)
+    # Retorna uma lista das areas dos blobs encontrados
+    areas = rotula(fechamento)
+    arr = np.array(areas)
 
-    # Salvamos imagem antes do processamento.
-    cv2.imwrite('imgBloom.png', gaussianBlur)
+    # Cria um histograma das areas encontradas
+    histograma = np.histogram(arr, bins='auto')
 
-    # ----------
-    # Daqui pra baixo, brainstorm.
+    # Imaginando o histograma como uma distribuicao gaussiana,
+    # as areas minima e maxima serao dadas pelo valor de pico do histograma
+    # deslocado por um valor sigma.
+    # TODO encontrar um valor bom de sigma que juntamente com C estime bem para todas as imgens
+    sigma = 1 
+    min_area = histograma[1][np.argmax(histograma[0]) - sigma]
+    max_area = histograma[1][np.argmax(histograma[0]) + sigma]
+    print("Min_area = " + str(min_area) + " | Max_area = " + str(max_area))
 
-    # Step 1 - Contar arroz com o que tem.
-    # Step 1.1 - Contornar
-    # Unico que funciona em todas as imagens, mas so temos os contornos
-    edges = cv2.Canny(gaussianBlur,100,200)
+    # Cria uma mascara para o vetor de areas apenas conter valores validos para arroz
+    singular_mask = (min_area < arr) & (arr <= max_area)
 
-    # Bom para a maioria, mas morre com 60.bmp e 205.bmp (melhor binarizacao para a 150.bmp)
-    # Talvez seja possivel utilizar em todas se utilizarmos normalizacao local, mas teriamos que criar na mao
-    otsu = cv2.threshold(gaussianBlur,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+    # Calcula a media dos valores validos do vetor 
+    area_media = np.mean(arr[singular_mask])
 
-    # Binariza mas tira um pouco do interior dos graos. Morre com a 150.bmp
-    adaptative = cv2.adaptiveThreshold(gaussianBlur,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY_INV,9,4)
+    # Soma todos os valores validos de arroz divididos pela media calculada e truca 
+    n_arroz = int(np.sum(np.round(arr/area_media)))
+    print('Numero de arroz:', n_arroz)
 
-    # Limpar ruídos da imagem Adaptative.
-    rectKernel = cv2.getStructuringElement(cv2.MORPH_RECT,(2,2))
-    openAdaptative = cv2.morphologyEx(adaptative, cv2.MORPH_OPEN, rectKernel)
-    openCanny = cv2.morphologyEx(edges, cv2.MORPH_OPEN, rectKernel)
-
-    # cv2.imshow('img',img)
-    # cv2.imshow('gray',gray)
-    # cv2.imshow('normalized',normalized)
-    # cv2.imshow('gaussian',gaussianBlur)
+    cv2.imshow('img',img)
+    cv2.imshow('adaptative',adaptative)
+    cv2.imshow('fechamento',fechamento)
 
     # Salvando pois no Windows não consigo gerar imshow() usando terminal.
-    cv2.imwrite('Edges.png', edges)
-    cv2.imwrite('Adaptative.png', adaptative)
-    cv2.imwrite('openCanny.png', openCanny)
-    cv2.imwrite('Otsu.png', otsu[1])
-    
-    # cv2.imshow('edges',edges)
-    # cv2.imshow('adaptative',adaptative)
-    # cv2.imshow('Otsu',otsu[1])
+    # cv2.imwrite('Adaptative.png', adaptative)
+    # cv2.imwrite('fechamento.png', fechamento)
 
     cv2.waitKey ()
     cv2.destroyAllWindows ()
