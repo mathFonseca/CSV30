@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import cv2
 
 # Variaveis globais. 
-INPUT_FOREGROUND = 'img/4.bmp'
+INPUT_FOREGROUND = 'img/5.bmp'
 INPUT_BACKGROUND = 'backgrounds/Rem.jpg'
 
 def main():
@@ -41,9 +41,28 @@ def main():
 
     alpha = Fg.copy() #mascara
 
+    max_b = 0 #maior valor da diferenca entre o canal verde e o azul
+    max_r = 0 #maior valor da diferenca entre o canal verde e o vermelho
     for y in range(F.shape[0]):
         for x in range(F.shape[1]):
-            if (Fg[y][x] - Fb[y][x] > 0.1 and Fg[y][x] - Fr[y][x] > 0.1): #verde maior que ambos azul e vermelho mas tambem eh diferente de ambos
+            if (Fg[y][x] > Fb[y][x]):
+                if (Fg[y][x] - Fb[y][x] > max_b):
+                    max_b = Fg[y][x] - Fb[y][x]
+            if (Fg[y][x] > Fr[y][x]):
+                if (Fg[y][x] - Fr[y][x] > max_r):
+                    max_r = Fg[y][x] - Fr[y][x]
+    print(max_b)
+    print(max_r)
+
+    thresh_b = 0.2*max_b #mantem os valores de threshold entre 0 e 0.2 (valores totalmente empiricos)
+    thresh_r = 0.2*max_r #mantem os valores de threshold entre 0 e 0.2 (valores totalmente empiricos)
+
+    print(thresh_b)
+    print(thresh_r)
+
+    for y in range(F.shape[0]):
+        for x in range(F.shape[1]):
+            if (Fg[y][x] - Fb[y][x] > thresh_b and Fg[y][x] - Fr[y][x] > thresh_r): #threshold aplicado apenas se verde eh maior que azul e vermelho porem eh diferente de ambos
                 alpha[y][x] = 1 - Fg[y][x] #fator de luminosidade do background
             else:
                 alpha[y][x] = 1 #mantem o foreground
